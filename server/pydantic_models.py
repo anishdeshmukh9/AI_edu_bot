@@ -1,0 +1,1 @@
+# here we will define the pydantic structure  of the project.. 
