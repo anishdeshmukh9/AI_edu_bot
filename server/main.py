@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from chat import chat_graph_egine
 
 app = FastAPI(title="AI Backend API", version="1.0.0")
 
@@ -6,7 +7,8 @@ app = FastAPI(title="AI Backend API", version="1.0.0")
 @app.get("/chat")
 def chat():
     # Feature 1, 6
-    return {"working": True}
+    chatbot = chat_graph_egine()
+    return {"working": chatbot}
 
 
 @app.get("/ocr")
