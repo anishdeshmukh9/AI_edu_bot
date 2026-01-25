@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat API Tester</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .config-panel {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .config-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .input-group {
+            flex: 1;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #495057;
+            font-size: 14px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-label {
+            font-weight: 700;
+            margin-bottom: 8px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .human-label {
+            color: #667eea;
+        }
+
+        .ai-label {
+            color: #764ba2;
+        }
+
+        .message-content {
+            padding: 20px;
+            border-radius: 12px;
+            line-height: 1.6;
+        }
+
+        .human-message {
+            background: white;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .ai-message {
+            background: white;
+            border-left: 4px solid #764ba2;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .ai-content h3 {
+            color: #764ba2;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+
+        .ai-content p {
+            margin-bottom: 15px;
+            color: #495057;
+        }
+
+        .formula {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: center;
+            border: 2px solid #e9ecef;
+            font-size: 18px;
+        }
+
+        .code-block {
+            margin: 15px 0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .links-section {
+            margin: 15px 0;
+        }
+
+        .links-section h4 {
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .links-section a {
+            color: #667eea;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .links-section a:hover {
+            text-decoration: underline;
+        }
+
+        .topics-section, .questions-section {
+            margin: 15px 0;
+        }
+
+        .topics-section h4, .questions-section h4 {
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .tag {
+            display: inline-block;
+            background: #e7f3ff;
+            color: #0066cc;
+            padding: 5px 12px;
+            border-radius: 20px;
+            margin: 5px 5px 5px 0;
+            font-size: 13px;
+        }
+
+        .question-item {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 3px solid #667eea;
+        }
+
+        .video-section {
+            margin: 15px 0;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .input-area {
+            padding: 20px 30px;
+            background: white;
+            border-top: 2px solid #e9ecef;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-row input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        .input-row input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .send-btn {
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .send-btn:active {
+            transform: translateY(0);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #764ba2;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #764ba2;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #f5c6cb;
+        }
+
+        .debug-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 12px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI Chat API Tester</h1>
+            <p>Test your AI backend with beautiful formatting</p>
+        </div>
+
+        <div class="config-panel">
+            <div class="config-row">
+                <div class="input-group">
+                    <label>API URL</label>
+                    <input type="text" id="apiUrl" value="http://127.0.0.1:8000/chat" placeholder="http://127.0.0.1:8000/chat">
+                </div>
+                <div class="input-group">
+                    <label>User ID</label>
+                    <input type="text" id="userId" value="user123" placeholder="Enter user ID">
+                </div>
+                <div class="input-group">
+                    <label>Chat ID</label>
+                    <input type="text" id="chatId" value="chat456" placeholder="Enter chat ID">
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="debug-info">🔍 Debug Mode Active - Check console (F12) for logs</div>
+        </div>
+
+        <div class="input-area">
+            <div class="input-row">
+                <input type="text" id="messageInput" placeholder="Type your message here..." autocomplete="off">
+                <button type="button" class="send-btn" id="sendBtn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        console.log('🚀 Script loaded successfully');
+        
+        const chatContainer = document.getElementById('chatContainer');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+
+        // Stop ALL form submissions
+        window.addEventListener('submit', function(e) {
+            console.log('⚠️ Form submission prevented');
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }, true);
+
+        // Add click event listener
+        sendBtn.addEventListener('click', function(e) {
+            console.log('🖱️ Button clicked');
+            e.preventDefault();
+            e.stopPropagation();
+            handleSendMessage();
+            return false;
+        });
+
+        // Add keypress event listener
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                console.log('⌨️ Enter key pressed');
+                e.preventDefault();
+                e.stopPropagation();
+                handleSendMessage();
+                return false;
+            }
+        });
+
+        function addHumanMessage(text) {
+            console.log('Adding human message:', text);
+            const msg = document.createElement('div');
+            msg.className = 'message';
+            msg.innerHTML = `
+                <div class="message-label human-label">👤 Human</div>
+                <div class="message-content human-message">${escapeHtml(text)}</div>
+            `;
+            chatContainer.appendChild(msg);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function addAIMessage(data) {
+            console.log('Adding AI message:', data);
+            const msg = document.createElement('div');
+            msg.className = 'message';
+            
+            let content = `<div class="message-label ai-label">🤖 AI Assistant</div><div class="message-content ai-message"><div class="ai-content">`;
+            
+            if (data.title) {
+                content += `<h3>${escapeHtml(data.title)}</h3>`;
+            }
+            
+            if (data.body) {
+                content += formatBody(data.body);
+            }
+            
+            if (data.links && data.links.length > 0) {
+                content += `<div class="links-section"><h4>📚 References:</h4>`;
+                data.links.forEach(link => {
+                    content += `<a href="${escapeHtml(link)}" target="_blank">${escapeHtml(link)}</a>`;
+                });
+                content += `</div>`;
+            }
+            
+            if (data.Need_of_manim === 'YES' && data.manim_video_path) {
+                content += `<div class="video-section">🎬 <strong>Animation Available:</strong> ${escapeHtml(data.manim_video_path)}</div>`;
+            }
+            
+            if (data.next_related_topic && data.next_related_topic.length > 0) {
+                content += `<div class="topics-section"><h4>🔗 Related Topics:</h4>`;
+                data.next_related_topic.forEach(topic => {
+                    content += `<span class="tag">${escapeHtml(topic)}</span>`;
+                });
+                content += `</div>`;
+            }
+            
+            if (data.next_questions && data.next_questions.length > 0) {
+                content += `<div class="questions-section"><h4>💡 Suggested Questions:</h4>`;
+                data.next_questions.forEach(q => {
+                    content += `<div class="question-item">${escapeHtml(q)}</div>`;
+                });
+                content += `</div>`;
+            }
+            
+            content += `</div></div>`;
+            msg.innerHTML = content;
+            chatContainer.appendChild(msg);
+            
+            Prism.highlightAllUnder(msg);
+            if (window.MathJax) {
+                MathJax.typesetPromise([msg]);
+            }
+            
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function formatBody(body) {
+            let formatted = body;
+            
+            formatted = formatted.replace(/\[\[FORMULA\]\](.*?)\[\[\/FORMULA\]\]/g, '<div class="formula">$$1$</div>');
+            
+            formatted = formatted.replace(/\[\[CODE\]\](.*?)\[\[\/CODE\]\]/gs, (match, code) => {
+                const unescaped = code.replace(/\\n/g, '\n');
+                return `<div class="code-block"><pre><code class="language-python">${escapeHtml(unescaped)}</code></pre></div>`;
+            });
+            
+            formatted = formatted.replace(/\*\/\*/g, '</p><p>');
+            
+            return `<p>${formatted}</p>`;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function addLoadingMessage() {
+            console.log('Adding loading message');
+            const msg = document.createElement('div');
+            msg.className = 'loading';
+            msg.id = 'loadingMsg';
+            msg.innerHTML = '<div class="spinner"></div><p>AI is thinking...</p>';
+            chatContainer.appendChild(msg);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function removeLoadingMessage() {
+            console.log('Removing loading message');
+            const loading = document.getElementById('loadingMsg');
+            if (loading) loading.remove();
+        }
+
+        function addErrorMessage(error) {
+            console.error('Error:', error);
+            const msg = document.createElement('div');
+            msg.className = 'error';
+            msg.textContent = `Error: ${error}`;
+            chatContainer.appendChild(msg);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function handleSendMessage() {
+            console.log('📤 handleSendMessage called');
+            
+            const message = messageInput.value.trim();
+            console.log('Message value:', message);
+            
+            if (!message) {
+                console.log('❌ Empty message, returning');
+                return;
+            }
+
+            const apiUrl = document.getElementById('apiUrl').value;
+            const userId = document.getElementById('userId').value;
+            const chatId = document.getElementById('chatId').value;
+
+            console.log('Configuration:', { apiUrl, userId, chatId, message });
+
+            addHumanMessage(message);
+            messageInput.value = '';
+            sendBtn.disabled = true;
+            addLoadingMessage();
+
+            const payload = {
+                user_id: userId,
+                chat_id: chatId,
+                message: message
+            };
+
+            console.log('📡 Sending request to:', apiUrl);
+            console.log('📦 Payload:', JSON.stringify(payload, null, 2));
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                console.log('✅ Response received:', response.status);
+
+                removeLoadingMessage();
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('📥 Response data:', data);
+                
+                if (data.working && data.working.messages) {
+                    const lastAIMessage = data.working.messages
+                        .filter(m => m.type === 'ai')
+                        .pop();
+                    
+                    if (lastAIMessage) {
+                        let aiData;
+                        try {
+                            if (lastAIMessage.content.startsWith('{') && lastAIMessage.content.includes('"content":')) {
+                                const parsed = JSON.parse(lastAIMessage.content);
+                                aiData = JSON.parse(parsed.content);
+                            } else {
+                                aiData = JSON.parse(lastAIMessage.content);
+                            }
+                            addAIMessage(aiData);
+                        } catch (e) {
+                            console.error('Parse error:', e);
+                            addErrorMessage('Failed to parse AI response: ' + e.message);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('💥 Fetch error:', error);
+                removeLoadingMessage();
+                addErrorMessage(error.message);
+            } finally {
+                sendBtn.disabled = false;
+                messageInput.focus();
+                console.log('✨ Message handling complete');
+            }
+        }
+
+        console.log('✅ All event listeners attached');
+    </script>
+</body>
+</html>

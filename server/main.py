@@ -1,14 +1,24 @@
 from fastapi import FastAPI
-from chat import chat_graph_egine
+from chat import chat_graph_engine
+from langchain_core.messages import HumanMessage 
+from pydantic_models import feature1_6
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="AI Backend API", version="1.0.0")
 
-
-@app.get("/chat")
-def chat():
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins. For production, specify: ["http://localhost:3000", "https://yourdomain.com"]
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allows all headers
+)
+@app.post("/chat")
+def chat(obj : feature1_6):
     # Feature 1, 6
-    chatbot = chat_graph_egine()
-    return {"working": chatbot}
+    chatbot = chat_graph_engine()
+    config = {"configurable":{"thread_id" : obj.chat_id}}
+    return {"working": chatbot.invoke({"messages" : HumanMessage(content=obj.message)} , config=config )}
 
 
 @app.get("/ocr")
