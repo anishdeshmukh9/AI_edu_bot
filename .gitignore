@@ -6,4 +6,12 @@
 *.__pycache__
 *.pyc
 *.db
-gg
+
+# Secrets & env
+.env
+*.env
+
+# Local RDP / keys / notes
+*.rdp.txt
+*.pem
+*.key
