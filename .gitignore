@@ -1,1 +1,9 @@
+/server/.env
+/server/__pycache__
 /aichat-env
+/__pycache__
+/F1/__pycache__/*
+*.__pycache__
+*.pyc
+*.db
+gg
