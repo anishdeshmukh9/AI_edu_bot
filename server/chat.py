@@ -5,7 +5,7 @@ from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
-from langchain_community.tools import DuckDuckGoSearchRun
+from langchain_community.tools import DuckDuckGoSearchRun ,YouSearchTool
 from langchain_core.tools import tool
 from langchain_core.output_parsers import PydanticOutputParser
 from dotenv import load_dotenv
@@ -108,31 +108,105 @@ def manim_node(state: ChatState) -> ChatState:
     
     # 1) Generate Manim code using LLM
     manim_generation_prompt = f"""
-Generate a complete Manim animation code based on this request: {prompt}
+Generate a complete Manim Community v0.19.x animation based on this request:
 
-Requirements:
-- Create a Scene class that extends Scene
-- Use proper Manim syntax and imports
-- Include self.play() and self.wait() calls appropriately
-- Make the animation visually engaging and clear
-- The scene class MUST be named 'GeneratedScene'
-- Only provide the Python code, no explanations or markdown
-- Keep it simple and focused
+REQUEST:
+{prompt}
 
-Example structure:
-```python
+STRICT TECHNICAL REQUIREMENTS (MUST FOLLOW EXACTLY):
+- The scene class MUST be named: GeneratedScene
+- The class MUST extend: Scene
+- Use only valid Manim Community v0.19.x APIs
+- Always include:
+  - self.play(...) for all animations
+  - self.wait() at the end
+- Only output pure Python code (no markdown, no explanations, no comments outside code)
+- The code MUST run without modification
+
+GRAPHING & AXES SAFETY RULES (CRITICAL):
+- Whenever using Axes or NumberPlane:
+  - x_range MUST be a list of three values: [x_min, x_max, step]
+  - y_range MUST be a list of three values: [y_min, y_max, step]
+  - NEVER pass a single int or float to x_range or y_range
+  - Example (correct):
+    Axes(x_range=[-10, 10, 1], y_range=[0, 1, 0.1])
+
+- Whenever using axes.plot():
+  - x_range MUST be a list: [x_min, x_max, step]
+  - Example (correct):
+    axes.plot(func, x_range=[-10, 10, 0.1])
+
+- NEVER generate:
+  - x_range = -10
+  - y_range = 10
+  - axes.plot(func, x_range=-10)
+
+FUNCTION PLOTTING RULES:
+- All plotted functions MUST:
+  - Be continuous in the chosen range
+  - Avoid division by zero
+  - Avoid overflow (e.g., exp(x) for large x)
+- Clamp or limit domains if needed to keep values finite
+
+VISUAL QUALITY RULES:
+- Always include:
+  - Axes with labels
+  - A title Text or MathTex at the top
+- Use:
+  - smooth animations (Create, Write, FadeIn)
+  - reasonable run_time (1 3 seconds per major animation)
+- Use contrasting colors for curves and axes
+- Keep layouts centered and readable
+
+NUMPY RULES:
+- If using math functions:
+  - Import numpy as np
+  - Use np.exp, np.sin, np.cos, etc. (not math.*)
+
+STYLE & SIMPLICITY:
+- Keep the animation simple, clean, and educational
+- Do NOT overcrowd the scene
+- Do NOT use advanced 3D features
+- Do NOT use external assets or files
+
+OUTPUT FORMAT:
+- Only valid Python code
+- No markdown
+- No triple backticks
+- No explanations
+
+REFERENCE TEMPLATE (FOLLOW THIS STYLE):
+
 from manim import *
+import numpy as np
 
 class GeneratedScene(Scene):
     def construct(self):
-        # Your animation code here
-        text = Text("Example")
-        self.play(Write(text))
-        self.wait()
-```
+        title = Text("Title Here").to_edge(UP)
+        self.play(Write(title))
 
-Generate the complete Manim code now:
+        axes = Axes(
+            x_range=[-10, 10, 1],
+            y_range=[0, 1, 0.1],
+            x_length=10,
+            y_length=5,
+            axis_config={{"include_numbers": True}}
+        )
+
+        labels = axes.get_axis_labels(x_label="x", y_label="y")
+        self.play(Create(axes), Write(labels))
+
+        def func(x):
+            return 1 / (1 + np.exp(-x))
+
+        graph = axes.plot(func, x_range=[-10, 10, 0.1], color=BLUE)
+        self.play(Create(graph), run_time=2)
+
+        self.wait()
+
+NOW generate the complete Manim code for the given request.
 """
+
     
     try:
         # Get Manim code from LLM

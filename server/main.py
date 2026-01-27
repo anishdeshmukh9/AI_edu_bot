@@ -4,6 +4,12 @@ from langchain_core.messages import HumanMessage
 from pydantic_models import feature1_6
 from fastapi.middleware.cors import CORSMiddleware
 
+# feature 4 pdf rag. 
+from F4.F4_chatnode import pdf_rag_graph
+from F4.F4_models import Feature4Input
+from F4.F4_history_db import load_full_history
+
+
 app = FastAPI(title="AI Backend API", version="1.0.0")
 
 app.add_middleware(
@@ -27,10 +33,25 @@ def ocr():
     return {"working": True}
 
 
+
 @app.post("/pdf_ingest")
-def pdf_ingest():
-    # Feature 4
-    return {"working": True}
+def pdf_ingest(data: Feature4Input):
+    state = {"input": data}
+    result = pdf_rag_graph.invoke(state)
+
+    history = load_full_history(data.user_id, data.chat_id)
+
+    messages = [
+        {"role": role, "content": content}
+        for role, content in history
+    ]
+
+    return {
+        "user_id": data.user_id,
+        "chat_id": data.chat_id,
+        "messages": messages,
+        "latest_answer": result["answer"].model_dump(),
+    }
 
 
 @app.post("/youtube_ingest")

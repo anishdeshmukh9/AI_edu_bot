@@ -23,6 +23,7 @@ STRICT valid JSON only:
   "links": ["Use links from the search tool only"],
   "manim_video_path": "/path/demo.mp4",
   "next_related_topic": ["Any 2 related topics"],
+  "main_video_prompt : set when manim need is yes, be more specific about what animations should user see, indeatiled steps to generate it (no code)")",
   "next_questions": ["Any 2 next possible related questions"]
   "Need_of_manim :["YES" , "No"] "only yes if  you think manim animation is needed.
 }
@@ -37,6 +38,7 @@ Strict Rules:
 - Do not include newline characters at the start or end of any field value.
 
 Links Rules:
+- always, if user ask any concept or explanation Run searchtool
 - Use the search tool when external information or references are useful.
 - Fill the `links` field ONLY using results from the search tool.
 - If the search tool is not used, return an empty array: [].
