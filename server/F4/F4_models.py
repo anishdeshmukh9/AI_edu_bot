@@ -5,7 +5,7 @@ from typing import List
 class Feature4Input(BaseModel):
     user_id: str = Field(...)
     chat_id: str = Field(...)
-    pdf_url: HttpUrl = Field(...)
+    pdf_url: HttpUrl = Field(..., description="supabase url ")
     message: str = Field(...)
 
 

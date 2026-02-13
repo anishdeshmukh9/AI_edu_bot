@@ -112,6 +112,9 @@ If the provided context is insufficient to answer properly:
 Your goal:
 Make the student truly understand the topic,
 not just repeat what the PDF says.
+
+
+IMPORTANT :- ANSWER SHOULD BE LESS THAN 100 WORDS
 """
 
 class ChatState(TypedDict):
@@ -132,14 +135,40 @@ def ingest_node(state: ChatState):
 
     if not vector_dir:
         docs = load_and_split(str(data.pdf_url))
+
+        # ---------- HARD VALIDATION (PERMANENT FIX) ----------
+        if not docs or len(docs) == 0:
+            raise ValueError(
+                "PDF ingestion failed: No text could be extracted from the PDF. "
+                "The PDF may be empty, scanned, or unsupported."
+            )
+
+        valid_docs = []
+        for d in docs:
+            if d.page_content and d.page_content.strip():
+                valid_docs.append(d)
+
+        if not valid_docs:
+            raise ValueError(
+                "PDF ingestion failed: Extracted documents contain no usable text."
+            )
+        # ----------------------------------------------------
+
         vector_dir = str(base_dir / str(uuid.uuid4()))
         vs = get_vectorstore(vector_dir)
-        vs.add_documents(docs)
-        mark_indexed(data.user_id, data.chat_id, str(data.pdf_url), vector_dir)
+
+        # This call is now GUARANTEED SAFE
+        vs.add_documents(valid_docs)
+
+        mark_indexed(
+            data.user_id,
+            data.chat_id,
+            str(data.pdf_url),
+            vector_dir
+        )
 
     state["vector_dir"] = vector_dir
     return state
-
 
 def retrieve_node(state: ChatState):
     data = state["input"]

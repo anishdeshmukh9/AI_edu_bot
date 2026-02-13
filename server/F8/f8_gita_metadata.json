@@ -1,0 +1,7 @@
+{
+  "source": "https://wdijccahqxmlcmpupttf.supabase.co/storage/v1/object/public/gita-audio/11-Bhagavad-gita_As_It_Is.pdf",
+  "total_pages": 583,
+  "total_chunks": 2624,
+  "vectorized": true,
+  "database": "ChromaDB"
+}

@@ -1,0 +1,23 @@
+# Feature 7: Podcast Generator - Requirements
+# Only Feature 7 specific dependencies (assumes Feature 2 dependencies already installed)
+
+# Text-to-Speech (choose one or more)
+# Option 1: gTTS (Free, Basic quality)
+gtts>=2.5.0
+
+# Option 2: Edge-TTS (Free, Better quality - RECOMMENDED)
+edge-tts>=6.1.0
+
+# Option 3: Premium TTS (Uncomment if using)
+# elevenlabs>=0.2.0  # Paid, Best quality
+# google-cloud-texttospeech>=2.14.0  # Paid
+# azure-cognitiveservices-speech>=1.30.0  # Paid
+
+# Audio Processing
+pydub>=0.25.1
+
+# System Requirements (not pip installable):
+# - ffmpeg (required by pydub)
+#   Ubuntu/Debian: sudo apt-get install ffmpeg
+#   macOS: brew install ffmpeg
+#   Windows: Download from https://ffmpeg.org/

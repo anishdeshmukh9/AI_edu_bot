@@ -1,0 +1,41 @@
+# ===============================
+# Core Backend
+# ===============================
+fastapi
+uvicorn
+pydantic
+python-dotenv
+requests
+
+# ===============================
+# LangChain & LangGraph
+# ===============================
+langchain
+langchain-core
+langchain-community
+langgraph
+langchain-groq
+
+# ===============================
+# Embeddings & Vector DB (CPU ONLY)
+# ===============================
+sentence-transformers
+faiss-cpu
+
+# ===============================
+# PDF / Video RAG
+# ===============================
+pytube
+youtube-transcript-api
+
+# ===============================
+# OCR & Vision (CPU)
+# ===============================
+opencv-python
+pytesseract
+
+# ===============================
+# Utilities
+# ===============================
+numpy
+yt-dlp

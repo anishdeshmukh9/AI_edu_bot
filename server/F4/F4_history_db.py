@@ -49,3 +49,19 @@ def load_full_history(user_id: str, chat_id: str):
         (user_id, chat_id),
     )
     return cursor.fetchall()
+
+
+def get_all_chat_ids(user_id: str):
+    """
+    Get all unique chat IDs for a given user.
+    Returns a list of chat IDs.
+    """
+    cursor.execute(
+        """
+        SELECT DISTINCT chat_id FROM chat_messages
+        WHERE user_id=?
+        ORDER BY chat_id
+        """,
+        (user_id,),
+    )
+    return [row[0] for row in cursor.fetchall()]

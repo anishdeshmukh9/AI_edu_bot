@@ -1,11 +1,11 @@
 from langgraph.graph import StateGraph, START, END
 from typing import TypedDict, Annotated
-from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage , AIMessage
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage, AIMessage
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
-from langchain_community.tools import DuckDuckGoSearchRun ,YouSearchTool
+from langchain_community.tools import DuckDuckGoSearchRun, YouSearchTool
 from langchain_core.tools import tool
 from langchain_core.output_parsers import PydanticOutputParser
 from dotenv import load_dotenv
@@ -21,10 +21,83 @@ import tempfile
 from pathlib import Path
 import shutil
 import time
+from F1_history_db import save_message, load_full_history, get_all_chat_ids, update_last_assistant_message
 
 load_dotenv()
 
 
+# -------------------- Supabase Configuration --------------------
+
+
+
+
+import time
+import requests
+import os
+from  dotenv import load_dotenv
+
+load_dotenv()
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")                 # https://xxxx.supabase.co
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_KEY") # service_role key
+SUPABASE_BUCKET = "manim"
+
+
+def upload_to_supabase(file_path: str, user_id: str, chat_id: str) -> str:
+    """
+    Upload a video file to Supabase Storage (manim bucket) using Service Role API.
+
+    Args:
+        file_path: Local path to the video file
+        user_id: User ID for organizing files
+        chat_id: Chat ID for organizing files
+
+    Returns:
+        Public URL of the uploaded video
+    """
+
+    try:
+        timestamp = int(time.time())
+        filename = f"{user_id}/{chat_id}/manim_{timestamp}.mp4"
+
+        with open(file_path, "rb") as f:
+            file_data = f.read()
+
+        upload_url = (
+            f"{SUPABASE_URL}/storage/v1/object/{SUPABASE_BUCKET}/{filename}"
+        )
+
+        headers = {
+            "Authorization": f"Bearer {SUPABASE_SERVICE_KEY}",
+            "Content-Type": "video/mp4",
+            "x-upsert": "true"
+        }
+
+        response = requests.put(
+            upload_url,
+            headers=headers,
+            data=file_data,
+            timeout=60
+        )
+
+        if response.status_code in (200, 201):
+            public_url = (
+                f"{SUPABASE_URL}/storage/v1/object/public/"
+                f"{SUPABASE_BUCKET}/{filename}"
+            )
+            print(f"✅ Video uploaded to Supabase (manim bucket): {public_url}")
+            return public_url
+
+        else:
+            print(
+                f"❌ Supabase upload failed "
+                f"[{response.status_code}]: {response.text}"
+            )
+            return ""
+
+    except Exception as e:
+        print(f"❌ Error uploading to Supabase: {e}")
+        return ""
 # -------------------- Tools --------------------
 
 search_tool = DuckDuckGoSearchRun(region="us-en")
@@ -37,17 +110,26 @@ llm_with_structure = llm.with_structured_output(
 )
 
 
-
-#--------------------STATE--------------------------------
+# -------------------- STATE --------------------------------
 
 class ChatState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
-    
-#----------------------------------------------------------
+    user_id: str  # Added for user separation
+    chat_id: str  # Added for chat separation
+    needs_manim: bool  # Track if manim is needed
+    structured_output: dict  # Store structured output separately
 
-#---------------------hELPER FUNCTIONS---------------
+
+# ----------------------------------------------------------
+
+# --------------------- HELPER FUNCTIONS ---------------
 
 def get_last_structured_output(state: ChatState) -> pydantic_for_feature_1_chat_output:
+    """Get the last structured output from state"""
+    if state.get("structured_output"):
+        return pydantic_for_feature_1_chat_output(**state["structured_output"])
+    
+    # Fallback: search in messages
     for msg in reversed(state["messages"]):
         if isinstance(msg, AIMessage):
             try:
@@ -56,14 +138,16 @@ def get_last_structured_output(state: ChatState) -> pydantic_for_feature_1_chat_
             except Exception:
                 continue
 
-    raise ValueError("No AIMessage with structured output found in state")
+    raise ValueError("No structured output found in state")
+
 
 # -------------------- Nodes --------------------
 
 def chat_node(state: ChatState):
+    """Main chat node that generates responses"""
     messages = state["messages"]
 
-    #  Inject system prompt only once per thread
+    # Inject system prompt only once per thread
     if not any(isinstance(m, SystemMessage) for m in messages):
         messages = [SystemMessage(content=SYSTEM_PROMPT)] + messages
 
@@ -74,39 +158,61 @@ def chat_node(state: ChatState):
     if response.tool_calls:
         return {"messages": [response]}
 
-    # 🔹 Otherwise produce structured output
+    # Otherwise produce structured output
     structured = llm_with_structure.invoke(messages)
 
     ai_message = AIMessage(
         content=structured.model_dump_json(indent=2)
     )
 
-    return {"messages": [ai_message]}
+    # Store structured output and check if manim is needed
+    needs_manim = structured.Need_of_manim.upper() == "YES"
+    
+    # Save the assistant's response to history database
+    # We store the structured output JSON so it can be retrieved later
+    if state.get("user_id") and state.get("chat_id"):
+        try:
+            print(f"💾 Saving assistant message to database: user_id={state['user_id']}, chat_id={state['chat_id']}")
+            save_message(
+                user_id=state["user_id"],
+                chat_id=state["chat_id"],
+                role="assistant",
+                content=structured.model_dump_json()
+            )
+            print("✅ Assistant message saved successfully")
+        except Exception as e:
+            print(f"❌ Error saving assistant message: {e}")
+            import traceback
+            traceback.print_exc()
 
+    return {
+        "messages": [ai_message],
+        "structured_output": structured.model_dump(),
+        "needs_manim": needs_manim
+    }
 
 
 def manim_node(state: ChatState) -> ChatState:
-
+    """Generate Manim video and upload to Supabase"""
     
     try:
         output = get_last_structured_output(state)
-        print(f" Retrieved structured output: {output.model_dump()}")
+        print(f"📊 Retrieved structured output: {output.model_dump()}")
     except Exception as e:
-        print(f" Error getting structured output: {e}")
+        print(f"❌ Error getting structured output: {e}")
         return state
     
-    # 🛑 If already updated by manim → do nothing
-    # Check if video path is valid (not a placeholder and file exists)
+    # If already has a valid video URL (not placeholder), skip generation
     if (output.manim_video_path and 
         not output.manim_video_path.startswith("/path/") and 
-        os.path.exists(output.manim_video_path)):
-        print(f"⏭  Video already generated: {output.manim_video_path}")
+        output.manim_video_path.startswith("http")):
+        print(f"⭐ Video already generated: {output.manim_video_path}")
         return state
     
     prompt = output.main_video_prompt
-    print(f"\n📝 Video Prompt: {prompt}")
+    print(f"\n🎬 Video Prompt: {prompt}")
     
-    # 1) Generate Manim code using LLM
+    # Generate Manim code using LLM
     manim_generation_prompt = f"""
 Generate a complete Manim Community v0.19.x animation based on this request:
 
@@ -154,7 +260,7 @@ VISUAL QUALITY RULES:
   - A title Text or MathTex at the top
 - Use:
   - smooth animations (Create, Write, FadeIn)
-  - reasonable run_time (1 3 seconds per major animation)
+  - reasonable run_time (1-3 seconds per major animation)
 - Use contrasting colors for curves and axes
 - Keep layouts centered and readable
 
@@ -207,6 +313,7 @@ class GeneratedScene(Scene):
 NOW generate the complete Manim code for the given request.
 """
 
+
     
     try:
         # Get Manim code from LLM
@@ -219,8 +326,7 @@ NOW generate the complete Manim code for the given request.
         elif "```" in manim_code:
             manim_code = manim_code.split("```")[1].split("```")[0].strip()
         
-   
-        # 2) Create temporary directory and file for Manim code
+        # Create temporary directory and file for Manim code
         temp_dir = tempfile.mkdtemp()
         
         code_file = os.path.join(temp_dir, "generated_animation.py")
@@ -228,9 +334,7 @@ NOW generate the complete Manim code for the given request.
         with open(code_file, "w") as f:
             f.write(manim_code)
         
-        # 3) Run Manim to generate the video
-        
-        # Execute manim command
+        # Run Manim to generate the video
         result = subprocess.run(
             [
                 "manim",
@@ -244,19 +348,17 @@ NOW generate the complete Manim code for the given request.
             cwd=temp_dir
         )
         
-        
         if result.stdout:
             print(result.stdout)
         
         if result.stderr:
-            print("\n Manim STDERR:")
+            print("\n⚠️ Manim STDERR:")
             print(result.stderr)
         
         if result.returncode != 0:
-            video_path = "/path/demo.mp4"  # fallback
+            video_url = "/path/demo.mp4"  # fallback
         else:
-            
-            # 4) Find the generated video - check multiple possible locations
+            # Find the generated video - check multiple possible locations
             possible_dirs = [
                 os.path.join(temp_dir, "media", "videos", "generated_animation", "1080p60"),
                 os.path.join(temp_dir, "media", "videos", "generated_animation", "480p15"),
@@ -274,25 +376,15 @@ NOW generate the complete Manim code for the given request.
                         break
             
             if video_files:
-                
-                # Move video to permanent location
-                permanent_dir = "./generated_videos"
-                os.makedirs(permanent_dir, exist_ok=True)
-                
-                timestamp = int(time.time())
-                final_video_path = os.path.join(permanent_dir, f"manim_video_{timestamp}.mp4")
-                
-                shutil.copy(str(video_files[0]), final_video_path)
-                video_path = os.path.abspath(final_video_path)
+                # Upload to Supabase
+                video_url = upload_to_supabase(
+                    str(video_files[0]),
+                    state["user_id"],
+                    state["chat_id"]
+                )
             else:
-               
-                for root, dirs, files in os.walk(temp_dir):
-                    print(f"  {root}:")
-                    for d in dirs:
-                        print(f"    📁 {d}/")
-                    for f in files:
-                        print(f"    📄 {f}")
-                video_path = "/path/demo.mp4"  # fallback
+                print("❌ No video files found in expected directories")
+                video_url = "/path/demo.mp4"  # fallback
         
         # Cleanup temp directory
         shutil.rmtree(temp_dir, ignore_errors=True)
@@ -300,15 +392,23 @@ NOW generate the complete Manim code for the given request.
     except Exception as e:
         import traceback
         traceback.print_exc()
-        video_path = "/path/demo.mp4"  # fallback on error
+        video_url = "/path/demo.mp4"  # fallback on error
     
-    # 5) Update the structured object
-    output.manim_video_path = video_path
+    # Update the structured output with video URL
+    output.manim_video_path = video_url
     
-    # 6) Build a new AI message with updated JSON
+    # Update the last assistant message in the database with the new video URL
+    if state.get("user_id") and state.get("chat_id"):
+        update_last_assistant_message(
+            user_id=state["user_id"],
+            chat_id=state["chat_id"],
+            content=output.model_dump_json()
+        )
+    
+    # Build a new AI message with updated JSON
     new_ai_msg = AIMessage(content=output.model_dump_json())
     
-    # 7) Remove ALL previous structured AI messages, keep humans + tool msgs
+    # Remove old structured AI messages, keep humans + tool msgs
     new_messages = []
     for msg in state["messages"]:
         if isinstance(msg, AIMessage):   
@@ -320,15 +420,19 @@ NOW generate the complete Manim code for the given request.
                 pass
         new_messages.append(msg)
     
-    # 8) Append only the final updated structured output
+    # Append the final updated structured output
     new_messages.append(new_ai_msg)
     
-   
-    return {"messages": new_messages}
+    return {
+        "messages": new_messages,
+        "structured_output": output.model_dump()
+    }
 
-#------------------------------------------------------
+
+# ------------------------------------------------------
 
 tool_node = ToolNode(tools)
+
 
 # -------------------- Checkpointer --------------------
 
@@ -336,65 +440,54 @@ conn = sqlite3.connect(database="chatbot.db", check_same_thread=False)
 checkpointer = SqliteSaver(conn=conn)
 
 
-#---------------- conditional edge -------------------
-
-def should_generate_manim(state: ChatState) -> str:
-    output = get_last_structured_output(state)
-
-    if output.Need_of_manim.upper() == "YES":
-        return "manim_node"
-
-    return END
+# ---------------- Conditional Edge -------------------
 
 def route_after_chat(state: ChatState) -> str:
-    # 1) If tools are needed → go to tools
-    tool_decision = tools_condition(state)
-    if tool_decision == "tools":
+    """Route after chat node - check if tools are needed first"""
+    # Check if tools are needed
+    last_message = state["messages"][-1]
+    if isinstance(last_message, AIMessage) and last_message.tool_calls:
         return "tools"
-
-    # 2) Try structured output (may not exist yet)
-    try:
-        output = get_last_structured_output(state)
-        if output.Need_of_manim.upper() == "YES":
-            return "manim_node"
-    except Exception:
-        pass
-
-    # 3) Else → we're done
+    
+    # If no tools needed, go to END
+    # Manim will be handled separately after the full response
     return END
 
 
+def should_continue_after_tools(state: ChatState) -> str:
+    """After tools execute, always return to chat to generate final response"""
+    return "chat_node"
 
 
 # -------------------- Graph Builder --------------------
 
 def chat_graph_engine():
+    """Build the LangGraph workflow"""
     graph = StateGraph(ChatState)
 
+    # Add nodes
     graph.add_node("chat_node", chat_node)
     graph.add_node("tools", tool_node)
     graph.add_node("manim_node", manim_node)
 
+    # Start with chat
     graph.add_edge(START, "chat_node")
 
-    #  SINGLE router
+    # Route from chat: either to tools or END
     graph.add_conditional_edges(
         "chat_node",
         route_after_chat,
         {
             "tools": "tools",
-            "manim_node": "manim_node",
             END: END,
         },
     )
 
-    # after tools → back to chat
+    # After tools, always go back to chat to generate final response
     graph.add_edge("tools", "chat_node")
 
-    # after manim → END (not back to chat)
+    # Manim is NOT part of the main flow - it's handled post-processing
     graph.add_edge("manim_node", END)
-    graph.add_edge("tools", END)
-
 
     chatbot = graph.compile(checkpointer=checkpointer)
     return chatbot
@@ -403,7 +496,76 @@ def chat_graph_engine():
 # -------------------- Thread Utilities --------------------
 
 def retrieve_all_threads():
+    """Get all thread IDs from checkpointer"""
     all_threads = set()
     for checkpoint in checkpointer.list(None):
         all_threads.add(checkpoint.config["configurable"]["thread_id"])
     return list(all_threads)
+
+
+def get_thread_id(user_id: str, chat_id: str) -> str:
+    """Generate a unique thread ID for user and chat combination"""
+    return f"{user_id}_{chat_id}"
+
+
+# -------------------- Main Execution Function --------------------
+
+def process_chat_message(user_id: str, chat_id: str, message: str):
+    """
+    Process a chat message with user and chat separation.
+    
+    Args:
+        user_id: Unique user identifier
+        chat_id: Unique chat identifier for this conversation
+        message: User's message
+        
+    Returns:
+        Full state dict including message history and structured output
+    """
+    # Save the user's message to history database
+    try:
+        print(f"💾 Saving user message to database: user_id={user_id}, chat_id={chat_id}")
+        save_message(user_id=user_id, chat_id=chat_id, role="user", content=message)
+        print("✅ User message saved successfully")
+    except Exception as e:
+        print(f"❌ Error saving user message: {e}")
+        import traceback
+        traceback.print_exc()
+    
+    # Create unique thread ID
+    thread_id = get_thread_id(user_id, chat_id)
+    
+    # Initialize chatbot
+    chatbot = chat_graph_engine()
+    
+    # Create config with thread_id for persistence
+    config = {
+        "configurable": {
+            "thread_id": thread_id
+        }
+    }
+    
+    # Prepare initial state
+    initial_state = {
+        "messages": [HumanMessage(content=message)],
+        "user_id": user_id,
+        "chat_id": chat_id,
+        "needs_manim": False,
+        "structured_output": {}
+    }
+    
+    # Run the graph
+    final_state = chatbot.invoke(initial_state, config)
+    
+    # Check if manim is needed and process it
+    if final_state.get("needs_manim", False):
+        print("\n🎬 Manim video generation requested, processing...")
+        # Run manim node separately
+        manim_state = manim_node(final_state)
+        # Update final state with manim results
+        final_state["structured_output"] = manim_state.get("structured_output", final_state.get("structured_output", {}))
+        final_state["messages"] = manim_state.get("messages", final_state.get("messages", []))
+    
+    # Return the FULL state (like original version)
+    # This includes: messages, user_id, chat_id, needs_manim, structured_output
+    return final_state

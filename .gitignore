@@ -15,3 +15,8 @@
 *.rdp.txt
 *.pem
 *.key
+
+chroma_store
+generated_videos
+chatbot.db-*
+
