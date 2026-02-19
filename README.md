@@ -1,28 +1,37 @@
 # 🎓 Adyayan AI — Backend
 
-> **AI-Powered Smart Learning Assistant** — Helping students truly understand concepts, not just memorize them.
+> **AI-Powered Smart Learning Assistant**  
+> Helping students truly understand concepts — not just memorize them.
 
-Adyayan AI is an intelligent, personalized learning backend built with **FastAPI**. It adapts to each student's thinking level, tracks their learning journey, and provides multimodal, context-aware doubt resolution across text, images, PDFs, YouTube videos, and more.
+Adyayan AI is an intelligent, personalized learning backend built with **FastAPI**.  
+It adapts to each student's thinking level, tracks their learning journey, and provides multimodal, context-aware doubt resolution across text, images, PDFs, and videos.
 
 ---
 
 ## 🎬 Demo Video
 
-<!-- Add demo video link or embed here -->
-> 📹 **[Watch Demo](#)** — *(link coming soon)*
+📹 **Watch Full Demo Here:**  
+👉 https://youtube.com/YOUR_VIDEO_LINK
+
+*(We host demo on YouTube to maintain repository performance.)*
 
 ---
 
-## 🏆 Recognition
+## 🏆 Recognition & Achievements
 
-<!-- Add hackathon win images below (4–5 slots) -->
+### 📸 Hackathon & Project Highlights
 
-| | | |
-|---|---|---|
-| ![Win 1](./assets/win1.jpg) | ![Win 2](./assets/win2.jpg) | ![Win 3](./assets/win3.jpg) |
-| ![Win 4](./assets/win4.jpg) | ![Win 5](./assets/win5.jpg) | |
+<p align="center">
+  <img src="assets/1000414759.jpg (1).jpeg" width="30%" />
+  <img src="assets/1000414760.jpg (1).jpeg" width="30%" />
+  <img src="assets/1000414761.jpg (1).jpeg" width="30%" />
+</p>
 
-> *(Replace image paths with actual award/recognition photos)*
+<p align="center">
+  <img src="assets/IMG_1860.JPG (1).jpeg" width="30%" />
+  <img src="assets/IMG_1896.JPG (1).jpeg" width="30%" />
+  <img src="assets/SAVE_20260217_210217.jpg.jpeg" width="30%" />
+</p>
 
 ---
 
