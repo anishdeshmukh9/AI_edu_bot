@@ -30,6 +30,8 @@ It adapts to each student's thinking level, tracks their learning journey, and p
 
 <p align="center">
   <img src="assets/1000414759.jpg (1).jpeg" width="30%" />
+    <img src="assets/SAVE_20260217_210217.jpg.jpeg" width="30%" />
+
   <img src="assets/1000414760.jpg (1).jpeg" width="30%" />
   <img src="assets/1000414761.jpg (1).jpeg" width="30%" />
 </p>
@@ -37,7 +39,6 @@ It adapts to each student's thinking level, tracks their learning journey, and p
 <p align="center">
   <img src="assets/IMG_1860.JPG (1).jpeg" width="30%" />
   <img src="assets/IMG_1896.JPG (1).jpeg" width="30%" />
-  <img src="assets/SAVE_20260217_210217.jpg.jpeg" width="30%" />
 </p>
 
 ---
@@ -133,7 +134,7 @@ graph TD
 |-------|-----------|
 | **Backend Framework** | FastAPI |
 | **AI Models** | OpenAI / Gemini / LLaMA |
-| **OCR** | EasyOCR / Tesseract |
+| **OCR** | Paddleocr / Tesseract |
 | **Speech-to-Text** | Whisper |
 | **Vector Database** | FAISS, Chroma, Pinecone |
 | **Database** | MongoDB, Supabase |
@@ -143,73 +144,8 @@ graph TD
 
 ---
 
-## 📁 Project Structure
-
-```
-adyayan-ai-backend/
-│
-├── app/
-│   ├── main.py                  # FastAPI entry point
-│   ├── core/
-│   │   ├── config.py            # Environment & app config
-│   │   └── dependencies.py      # Shared dependencies
-│   │
-│   ├── agents/
-│   │   └── orchestrator.py      # MCP / Agent Orchestrator
-│   │
-│   ├── engines/
-│   │   ├── llm_engine.py        # LLM reasoning wrapper
-│   │   ├── rag_engine.py        # RAG pipeline
-│   │   ├── concept_engine.py    # Concept Intelligence
-│   │   └── student_engine.py    # Student Memory & Personalization
-│   │
-│   ├── features/
-│   │   ├── f1_ocr/              # F1: OCR Doubt Detection
-│   │   ├── f2_youtube_rag/      # F2: YouTube RAG
-│   │   ├── f3_chat_manim/       # F3: Chat Mode + Manim Animations
-│   │   ├── f4_podcast/          # F4: Podcast Generation
-│   │   ├── f5_gitgpt/           # F5: GitGPT Support
-│   │   └── f6_test_gen/         # F6: Test Generation & Evaluation
-│   │
-│   ├── models/                  # Pydantic schemas
-│   ├── db/                      # MongoDB & vector store clients
-│   └── utils/                   # Helpers, preprocessors
-│
-├── tests/                       # Unit & integration tests
-├── .env.example
-├── requirements.txt
-├── Dockerfile
-└── README.md
-```
-
 ---
 
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Python 3.10+
-- MongoDB instance
-- API keys: OpenAI / Gemini, optionally Pinecone
-
-### Installation
-
-```bash
-# Clone the repository
-git clone https://github.com/your-org/adyayan-ai-backend.git
-cd adyayan-ai-backend
-
-# Create and activate virtual environment
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Copy environment config
-cp .env.example .env
-# Fill in your API keys and DB URIs in .env
-```
 
 ### Running the Server
 
@@ -221,33 +157,7 @@ API docs available at: `http://localhost:8000/docs`
 
 ---
 
-## 📡 API Endpoints
 
-| Method | Endpoint | Feature | Description |
-|--------|----------|---------|-------------|
-| `POST` | `/api/f1/ocr` | F1 | Upload handwritten image; returns extracted text + AI explanation |
-| `POST` | `/api/f2/youtube` | F2 | Submit YouTube URL + query; returns context-aware answer |
-| `POST` | `/api/f3/chat` | F3 | Chat-based doubt solving with optional Manim animation |
-| `GET` | `/api/f3/animation/{id}` | F3 | Retrieve generated Manim animation |
-| `POST` | `/api/f4/podcast` | F4 | Generate podcast audio from topic or chat content |
-| `POST` | `/api/f5/gitgpt` | F5 | Submit GitHub repo URL + query for codebase Q&A |
-| `POST` | `/api/f6/test/generate` | F6 | Generate a test from a topic or uploaded content |
-| `POST` | `/api/f6/test/evaluate` | F6 | Submit answers for AI-based evaluation and feedback |
-
----
-
-## ⚠️ Constraints & Mitigations
-
-| Challenge | Mitigation Strategy |
-|-----------|-------------------|
-| High computational overhead (LLMs, OCR, STT, Manim) | Prompt compression, async batching, response caching |
-| End-to-end latency from sequential inference | Non-blocking async APIs, parallel module execution |
-| OCR/STT accuracy with noisy handwriting or accents | Robust preprocessing, domain fine-tuning |
-| Scalability under concurrent load | Loosely coupled microservices with horizontal scaling |
-| Student data privacy | Encryption at rest/transit, RBAC, secure API communication |
-| External API dependency (cost, rate limits) | Fallback mechanisms, local model support (LLaMA) |
-
----
 
 ## 🤝 Contributing
 
