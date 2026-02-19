@@ -10,9 +10,16 @@ It adapts to each student's thinking level, tracks their learning journey, and p
 
 ## 🎬 Demo Video
 
-📹 **Watch Full Demo Here:**  
-👉 https://youtube.com/YOUR_VIDEO_LINK
 
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=YOUR_VIDEO_ID" target="_blank">
+    <img src="https://img.youtube.com/vi/YOUR_VIDEO_ID/0.jpg" width="70%" />
+  </a>
+</p>
+
+<p align="center">
+  ▶️ Click to Watch Full Demo
+</p>
 *(We host demo on YouTube to maintain repository performance.)*
 
 ---
