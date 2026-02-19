@@ -29,16 +29,15 @@ It adapts to each student's thinking level, tracks their learning journey, and p
 ### 📸 Hackathon & Project Highlights
 
 <p align="center">
-  <img src="assets/1000414759.jpg (1).jpeg" width="30%" />
-    <img src="assets/SAVE_20260217_210217.jpg.jpeg" width="30%" />
-
-  <img src="assets/1000414760.jpg (1).jpeg" width="30%" />
-  <img src="assets/1000414761.jpg (1).jpeg" width="30%" />
+  <img src="assets/win1.jpeg" height="220" />
+  <img src="assets/win2.jpeg" height="220" />
+  <img src="assets/win3.jpeg" height="220" />
 </p>
 
 <p align="center">
-  <img src="assets/IMG_1860.JPG (1).jpeg" width="30%" />
-  <img src="assets/IMG_1896.JPG (1).jpeg" width="30%" />
+  <img src="assets/win4.jpeg" height="220" />
+  <img src="assets/win5.jpeg" height="220" />
+  <img src="assets/win6.jpeg" height="220" />
 </p>
 
 ---
